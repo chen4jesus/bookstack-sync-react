@@ -60,6 +60,25 @@
   background: #a0aec0;
 }
 
+/* Custom scrollbar for the book list */
+.max-h-96::-webkit-scrollbar {
+  width: 8px;
+}
+
+.max-h-96::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.max-h-96::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 4px;
+}
+
+.max-h-96::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
 /* Checkbox styling */
 input[type="checkbox"] {
   cursor: pointer;
@@ -109,4 +128,106 @@ button:not(:disabled):active {
 
 .shadow-lg:hover {
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Tooltip styles */
+.group {
+  position: relative;
+}
+
+.group:hover .group-hover\:block {
+  display: block;
+}
+
+.group-hover\:block {
+  display: none;
+  width: max-content;
+  max-width: 300px;
+  word-wrap: break-word;
+}
+
+/* Ensure tooltip doesn't get cut off */
+.max-h-96 {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Add a small delay to the tooltip appearance to prevent accidental triggers */
+.group-hover\:block {
+  transition: opacity 150ms ease-in-out;
+  transition-delay: 100ms;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.group:hover .group-hover\:block {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Tooltip arrow styling */
+.transform.rotate-45 {
+  width: 10px;
+  height: 10px;
+}
+
+/* Tooltip container positioning */
+.tooltip-container {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 8px;
+  z-index: 50;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Ensure tooltip stays within viewport */
+@media (max-width: 640px) {
+  .tooltip-container {
+    left: 0;
+    right: 0;
+    max-width: 90vw;
+  }
+  
+  .tooltip-container .transform.rotate-45 {
+    left: 10px;
+  }
+}
+
+/* Prevent tooltip from being cut off at the top of the screen */
+.max-h-96 .tooltip-container {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* Modal animation styles */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.fixed.inset-0 {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.fixed.inset-0 > div {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Ensure proper overflow handling */
+.max-h-96 {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Responsive adjustments for the book list */
+@media (max-width: 768px) {
+  .max-h-96 {
+    max-height: 70vh;
+  }
 }

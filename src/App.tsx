@@ -6,6 +6,46 @@ import './App.css'
 // Create a single instance of the Spring Boot API
 const springBootApi = new SpringBootApi()
 
+// Modal component for displaying book descriptions
+function DescriptionModal({ 
+  book, 
+  onClose 
+}: { 
+  book: Book | null, 
+  onClose: () => void 
+}) {
+  if (!book) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[80vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+          <h3 className="text-lg font-semibold text-left">{book.name}</h3>
+          <button 
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 focus:outline-none"
+          >
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+        <div className="p-4 overflow-y-auto">
+          <p className="text-gray-700 whitespace-normal break-words text-left">{book.description}</p>
+        </div>
+        <div className="p-4 border-t border-gray-200">
+          <button 
+            onClick={onClose}
+            className="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [books, setBooks] = useState<Book[]>([])
   const [selectedBookIds, setSelectedBookIds] = useState<number[]>([])
@@ -14,6 +54,7 @@ function App() {
   const [success, setSuccess] = useState<string | null>(null)
   const [apiStatus, setApiStatus] = useState<string | null>(null)
   const [syncProgress, setSyncProgress] = useState<{[key: number]: string}>({})
+  const [activeBook, setActiveBook] = useState<Book | null>(null)
 
   // Check if the Spring Boot API is available
   useEffect(() => {
@@ -120,9 +161,9 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
-      <div className="relative py-3 sm:max-w-xl md:max-w-2xl lg:max-w-4xl mx-auto">
-        <div className="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20">
-          <div className="max-w-md md:max-w-3xl mx-auto">
+      <div className="relative py-3 px-4 sm:px-6 w-full max-w-5xl mx-auto">
+        <div className="relative px-4 py-8 sm:py-10 bg-white shadow-lg rounded-xl sm:rounded-3xl sm:p-12 md:p-16">
+          <div className="w-full mx-auto">
             <div className="divide-y divide-gray-200">
               <div className="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
                 <h1 className="text-3xl font-bold text-center mb-8">BookStack Sync Tool</h1>
@@ -158,7 +199,7 @@ function App() {
                       </button>
                     </div>
                     
-                    <div className="max-h-80 overflow-y-auto border border-gray-200 rounded-md">
+                    <div className="max-h-96 overflow-y-auto border border-gray-200 rounded-md">
                       {books.map((book) => (
                         <div 
                           key={book.id} 
@@ -174,13 +215,28 @@ function App() {
                             className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                           />
                           <div className="ml-3 flex-grow">
-                            <span className="block font-medium">{book.name}</span>
+                            <span className="block font-medium text-left">{book.name}</span>
                             {book.description && (
-                              <span className="block text-sm text-gray-500 truncate">{book.description}</span>
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-500 truncate text-left mr-2" style={{ maxWidth: 'calc(100% - 70px)' }}>
+                                  {book.description.length > 40 
+                                    ? book.description.substring(0, 40) + '...' 
+                                    : book.description}
+                                </span>
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveBook(book);
+                                  }}
+                                  className="text-xs text-indigo-600 hover:text-indigo-800 font-medium px-2 py-1 rounded-full bg-indigo-50 hover:bg-indigo-100 focus:outline-none flex-shrink-0"
+                                >
+                                  Details
+                                </button>
+                              </div>
                             )}
                           </div>
                           {syncProgress[book.id] && (
-                            <span className={`text-sm px-2 py-1 rounded ${
+                            <span className={`text-sm px-2 py-1 rounded whitespace-nowrap ml-2 ${
                               syncProgress[book.id] === 'Completed' 
                                 ? 'bg-green-100 text-green-800' 
                                 : syncProgress[book.id] === 'Failed'
@@ -229,6 +285,14 @@ function App() {
                       Clear Status
                     </button>
                   </div>
+                )}
+
+                {/* Description Modal */}
+                {activeBook && (
+                  <DescriptionModal 
+                    book={activeBook} 
+                    onClose={() => setActiveBook(null)} 
+                  />
                 )}
 
                 {/* Note about Spring Boot Backend */}

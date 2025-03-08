@@ -20,7 +20,13 @@ services:
     ports:
       - "8080:8080"
     restart: always
+      - app-network
     environment:
       - SPRING_PROFILES_ACTIVE=prod
     volumes:
-    - backend-data:/data
+      - backend-data:/data
+
+# Volume declaration for backend data persistence
+volumes:
+  backend-data:
+    driver: local

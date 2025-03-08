@@ -52,10 +52,17 @@ bash deploy.sh
 
 ### Backend Service
 
-The backend service is configured in the docker-compose.yml file. You need to:
+The backend service is configured in the docker-compose.yml file. The configuration includes:
 
-1. Replace `your-backend-image:latest` with your actual backend Docker image
-2. Adjust any environment variables or volumes as needed
+1. The backend image: `bookstack-sync`
+2. Environment variables for the Spring Boot application
+3. A volume for data persistence: `backend-data`
+
+If you need to use a different backend image, update the `image` field in the `backend` service section.
+
+### Data Persistence
+
+The application uses a Docker volume named `backend-data` to persist data. This volume is automatically created when you start the containers.
 
 ## Accessing the Application
 
@@ -95,6 +102,7 @@ To configure HTTPS:
 - **Container not starting**: Check logs with `docker-compose logs`
 - **Cannot access the application**: Verify firewall settings and that ports 8123 and 8080 are open
 - **API requests failing**: Check the backend service configuration and Nginx proxy settings
+- **Volume errors**: Make sure the volumes section is properly defined in docker-compose.yml
 
 ## Security Considerations
 

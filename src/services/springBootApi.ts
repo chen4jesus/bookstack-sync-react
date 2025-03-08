@@ -81,16 +81,34 @@ class SpringBootApi {
       const config = await this.getConfig();
       const headers: ApiHeaders = {};
       
-      if (config) {
-        headers['X-Source-Url'] = config.sourceBaseUrl;
-        headers['X-Source-Token'] = config.sourceTokenSecret;
-        headers['X-Source-Token-Id'] = config.sourceTokenId;
+      if (!config) {
+        console.error('No configuration found when trying to list books');
+        throw new Error('Configuration is missing');
       }
       
+      // Ensure all required source credentials are present
+      if (!config.sourceBaseUrl || !config.sourceTokenSecret || !config.sourceTokenId) {
+        console.error('Source credentials are incomplete for listing books');
+        throw new Error('Source credentials are incomplete');
+      }
+      
+      // Add source credentials to headers
+      headers['X-Source-Url'] = config.sourceBaseUrl;
+      headers['X-Source-Token'] = config.sourceTokenSecret;
+      headers['X-Source-Token-Id'] = config.sourceTokenId;
+      
+      console.log('Listing books with headers:', Object.keys(headers));
+      
       // Use apiClient instead of axios directly to benefit from the timeout setting
-      const response = await apiClient.get(`${SPRING_BOOT_API_URL}/books`, { headers });
+      const response = await apiClient.get(`${SPRING_BOOT_API_URL}/books`, { 
+        headers,
+        timeout: API_TIMEOUT
+      });
+      
+      console.log('Books list response:', response.status, response.data?.length || 0, 'books');
       return response.data;
     } catch (error) {
+      console.error('Error listing books:', error);
       this.handleError(error);
     }
   }
@@ -103,15 +121,33 @@ class SpringBootApi {
       const config = await this.getConfig();
       const headers: ApiHeaders = {};
       
-      if (config) {
-        headers['X-Source-Url'] = config.sourceBaseUrl;
-        headers['X-Source-Token'] = config.sourceTokenSecret;
-        headers['X-Source-Token-Id'] = config.sourceTokenId;
+      if (!config) {
+        console.error(`No configuration found when trying to get book ${id}`);
+        throw new Error('Configuration is missing');
       }
       
-      const response = await apiClient.get(`${SPRING_BOOT_API_URL}/books/${id}`, { headers });
+      // Ensure all required source credentials are present
+      if (!config.sourceBaseUrl || !config.sourceTokenSecret || !config.sourceTokenId) {
+        console.error(`Source credentials are incomplete for getting book ${id}`);
+        throw new Error('Source credentials are incomplete');
+      }
+      
+      // Add source credentials to headers
+      headers['X-Source-Url'] = config.sourceBaseUrl;
+      headers['X-Source-Token'] = config.sourceTokenSecret;
+      headers['X-Source-Token-Id'] = config.sourceTokenId;
+      
+      console.log(`Getting book ${id} with headers:`, Object.keys(headers));
+      
+      const response = await apiClient.get(`${SPRING_BOOT_API_URL}/books/${id}`, { 
+        headers,
+        timeout: API_TIMEOUT
+      });
+      
+      console.log(`Book ${id} response:`, response.status);
       return response.data;
     } catch (error) {
+      console.error(`Error getting book ${id}:`, error);
       this.handleError(error);
     }
   }
@@ -124,17 +160,40 @@ class SpringBootApi {
       const config = await this.getConfig();
       const headers: ApiHeaders = {};
       
-      if (config) {
-        headers['X-Source-Url'] = config.sourceBaseUrl;
-        headers['X-Source-Token'] = config.sourceTokenSecret;
-        headers['X-Source-Token-Id'] = config.sourceTokenId;
-        headers['X-Destination-Url'] = config.destinationBaseUrl;
-        headers['X-Destination-Token'] = config.destinationTokenSecret;
-        headers['X-Destination-Token-Id'] = config.destinationTokenId;
+      if (!config) {
+        console.error('No configuration found when trying to sync book');
+        throw new Error('Configuration is missing');
       }
       
-      await apiClient.post(`${SPRING_BOOT_API_URL}/books/${sourceBookId}`, {}, { headers });
+      // Ensure all required credentials are present
+      if (!config.sourceBaseUrl || !config.sourceTokenSecret || !config.sourceTokenId ||
+          !config.destinationBaseUrl || !config.destinationTokenSecret || !config.destinationTokenId) {
+        console.error('Credentials are incomplete for book sync');
+        throw new Error('Source or destination credentials are incomplete');
+      }
+      
+      // Add source credentials to headers
+      headers['X-Source-Url'] = config.sourceBaseUrl;
+      headers['X-Source-Token'] = config.sourceTokenSecret;
+      headers['X-Source-Token-Id'] = config.sourceTokenId;
+      
+      // Add destination credentials
+      headers['X-Destination-Url'] = config.destinationBaseUrl;
+      headers['X-Destination-Token'] = config.destinationTokenSecret;
+      headers['X-Destination-Token-Id'] = config.destinationTokenId;
+      
+      console.log(`Syncing book ${sourceBookId} with headers:`, Object.keys(headers));
+      
+      // Send an empty object as the request body
+      const response = await apiClient.post(`${SPRING_BOOT_API_URL}/books/${sourceBookId}`, null, { 
+        headers,
+        timeout: API_TIMEOUT
+      });
+      
+      console.log(`Book ${sourceBookId} sync response:`, response.status);
+      return response.data;
     } catch (error) {
+      console.error(`Error syncing book ${sourceBookId}:`, error);
       this.handleError(error);
     }
   }
@@ -147,18 +206,39 @@ class SpringBootApi {
       const config = await this.getConfig();
       const headers: ApiHeaders = {};
       
-      if (config) {
-        headers['X-Source-Url'] = config.sourceBaseUrl;
-        headers['X-Source-Token'] = config.sourceTokenSecret;
-        headers['X-Source-Token-Id'] = config.sourceTokenId;
-        headers['X-Destination-Url'] = config.destinationBaseUrl;
-        headers['X-Destination-Token'] = config.destinationTokenSecret;
-        headers['X-Destination-Token-Id'] = config.destinationTokenId;
+      if (!config) {
+        console.error('No configuration found when trying to sync multiple books');
+        throw new Error('Configuration is missing');
       }
       
-      const response = await apiClient.post(`${SPRING_BOOT_API_URL}/books`, sourceBookIds, { headers });
+      // Ensure all required credentials are present
+      if (!config.sourceBaseUrl || !config.sourceTokenSecret || !config.sourceTokenId ||
+          !config.destinationBaseUrl || !config.destinationTokenSecret || !config.destinationTokenId) {
+        console.error('Credentials are incomplete for books sync');
+        throw new Error('Source or destination credentials are incomplete');
+      }
+      
+      // Add source credentials to headers
+      headers['X-Source-Url'] = config.sourceBaseUrl;
+      headers['X-Source-Token'] = config.sourceTokenSecret;
+      headers['X-Source-Token-Id'] = config.sourceTokenId;
+      
+      // Add destination credentials
+      headers['X-Destination-Url'] = config.destinationBaseUrl;
+      headers['X-Destination-Token'] = config.destinationTokenSecret;
+      headers['X-Destination-Token-Id'] = config.destinationTokenId;
+      
+      console.log(`Syncing ${sourceBookIds.length} books with headers:`, Object.keys(headers));
+      
+      const response = await apiClient.post(`${SPRING_BOOT_API_URL}/books`, sourceBookIds, { 
+        headers,
+        timeout: API_TIMEOUT
+      });
+      
+      console.log(`Books sync response:`, response.status, response.data);
       return response.data;
     } catch (error) {
+      console.error(`Error syncing multiple books:`, error);
       this.handleError(error);
     }
   }
@@ -171,21 +251,45 @@ class SpringBootApi {
       const config = await this.getConfig();
       const headers: ApiHeaders = {};
       
-      if (config) {
-        headers['X-Source-Url'] = config.sourceBaseUrl;
-        headers['X-Source-Token'] = config.sourceTokenSecret;
-        headers['X-Source-Token-Id'] = config.sourceTokenId;
-        
-        if (config.destinationBaseUrl && config.destinationTokenId && config.destinationTokenSecret) {
-          headers['X-Destination-Url'] = config.destinationBaseUrl;
-          headers['X-Destination-Token'] = config.destinationTokenSecret;
-          headers['X-Destination-Token-Id'] = config.destinationTokenId;
-        }
+      if (!config) {
+        console.error('No configuration found when trying to verify credentials');
+        throw new Error('Configuration is missing');
       }
       
-      const response = await apiClient.get(`${SPRING_BOOT_API_URL}/verify`, { headers });
+      // Ensure all required source credentials are present
+      if (!config.sourceBaseUrl || !config.sourceTokenSecret || !config.sourceTokenId) {
+        console.error('Source credentials are incomplete', { 
+          hasUrl: !!config.sourceBaseUrl, 
+          hasToken: !!config.sourceTokenSecret, 
+          hasTokenId: !!config.sourceTokenId 
+        });
+        throw new Error('Source credentials are incomplete');
+      }
+      
+      // Add source credentials to headers
+      headers['X-Source-Url'] = config.sourceBaseUrl;
+      headers['X-Source-Token'] = config.sourceTokenSecret;
+      headers['X-Source-Token-Id'] = config.sourceTokenId;
+      
+      // Add destination credentials if they exist
+      if (config.destinationBaseUrl && config.destinationTokenId && config.destinationTokenSecret) {
+        headers['X-Destination-Url'] = config.destinationBaseUrl;
+        headers['X-Destination-Token'] = config.destinationTokenSecret;
+        headers['X-Destination-Token-Id'] = config.destinationTokenId;
+      }
+      
+      console.log('Verifying credentials with headers:', Object.keys(headers));
+      
+      const response = await apiClient.get(`${SPRING_BOOT_API_URL}/verify`, { 
+        headers,
+        // Explicitly set timeout for this critical operation
+        timeout: API_TIMEOUT
+      });
+      
+      console.log('Credential verification response:', response.status, response.data);
       return response.data;
     } catch (error) {
+      console.error('Error verifying credentials:', error);
       this.handleError(error);
     }
   }
@@ -198,16 +302,131 @@ class SpringBootApi {
       const config = await this.getConfig();
       const headers: ApiHeaders = {};
       
-      if (config) {
+      if (!config) {
+        console.error('No configuration found when trying to get raw books data');
+        throw new Error('Configuration is missing');
+      }
+      
+      // Ensure all required source credentials are present
+      if (!config.sourceBaseUrl || !config.sourceTokenSecret || !config.sourceTokenId) {
+        console.error('Source credentials are incomplete for getting raw books data');
+        throw new Error('Source credentials are incomplete');
+      }
+      
+      // Add source credentials to headers
+      headers['X-Source-Url'] = config.sourceBaseUrl;
+      headers['X-Source-Token'] = config.sourceTokenSecret;
+      headers['X-Source-Token-Id'] = config.sourceTokenId;
+      
+      console.log('Getting raw books data with headers:', Object.keys(headers));
+      
+      const response = await apiClient.get(`${DEBUG_API_URL}/books`, { 
+        headers,
+        timeout: API_TIMEOUT,
+        responseType: 'text' // Ensure we get the raw response as text
+      });
+      
+      console.log('Raw books data response:', response.status);
+      return response.data;
+    } catch (error) {
+      console.error('Error getting raw books data:', error);
+      this.handleError(error);
+    }
+  }
+
+  /**
+   * Test API connection and diagnose issues
+   */
+  async testConnection(): Promise<{ status: string; details: any }> {
+    try {
+      const config = await this.getConfig();
+      
+      if (!config) {
+        return {
+          status: 'error',
+          details: 'No configuration found. Please configure the application first.'
+        };
+      }
+      
+      // Check if we have source credentials
+      const hasSourceCredentials = !!(
+        config.sourceBaseUrl && 
+        config.sourceTokenSecret && 
+        config.sourceTokenId
+      );
+      
+      // Check if we have destination credentials
+      const hasDestinationCredentials = !!(
+        config.destinationBaseUrl && 
+        config.destinationTokenSecret && 
+        config.destinationTokenId
+      );
+      
+      // Create test headers
+      const headers: ApiHeaders = {};
+      
+      if (hasSourceCredentials) {
         headers['X-Source-Url'] = config.sourceBaseUrl;
         headers['X-Source-Token'] = config.sourceTokenSecret;
         headers['X-Source-Token-Id'] = config.sourceTokenId;
       }
       
-      const response = await apiClient.get(`${DEBUG_API_URL}/books`, { headers });
-      return response.data;
+      // Test basic connectivity to the backend
+      try {
+        // Simple ping to the backend with a short timeout
+        const pingResponse = await apiClient.get(`${SPRING_BOOT_API_URL}/ping`, { 
+          headers,
+          timeout: 5000 // Short timeout for ping
+        });
+        
+        return {
+          status: 'success',
+          details: {
+            backendConnected: true,
+            pingResponse: pingResponse.data,
+            hasSourceCredentials,
+            hasDestinationCredentials,
+            configuredSourceUrl: config.sourceBaseUrl,
+            configuredDestinationUrl: config.destinationBaseUrl
+          }
+        };
+      } catch (error) {
+        // If we can't connect to the backend, return detailed error
+        if (axios.isAxiosError(error)) {
+          return {
+            status: 'error',
+            details: {
+              backendConnected: false,
+              errorMessage: error.message,
+              errorCode: error.code,
+              errorResponse: error.response?.data,
+              errorStatus: error.response?.status,
+              hasSourceCredentials,
+              hasDestinationCredentials,
+              configuredSourceUrl: config.sourceBaseUrl,
+              configuredDestinationUrl: config.destinationBaseUrl
+            }
+          };
+        }
+        
+        return {
+          status: 'error',
+          details: {
+            backendConnected: false,
+            errorMessage: String(error),
+            hasSourceCredentials,
+            hasDestinationCredentials
+          }
+        };
+      }
     } catch (error) {
-      this.handleError(error);
+      console.error('Error testing connection:', error);
+      return {
+        status: 'error',
+        details: {
+          errorMessage: String(error)
+        }
+      };
     }
   }
 

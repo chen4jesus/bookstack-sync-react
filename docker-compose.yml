@@ -32,6 +32,11 @@ services:
       - SPRING_WEB_CORS_ALLOWED-HEADERS=*
       - SPRING_WEB_CORS_ALLOW-CREDENTIALS=false
       - SPRING_WEB_CORS_MAX-AGE=3600
+      # Add timeout configuration (5 minutes = 300000ms)
+      - SPRING_MVC_ASYNC_REQUEST_TIMEOUT=300000
+      - SERVER_TOMCAT_CONNECTION-TIMEOUT=300000
+      - SPRING_SERVLET_MULTIPART_MAX-FILE-SIZE=50MB
+      - SPRING_SERVLET_MULTIPART_MAX-REQUEST-SIZE=50MB
     # Uncomment if you need volumes for data persistence
     # volumes:
     #   - backend-data:/data

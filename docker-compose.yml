@@ -9,7 +9,23 @@ services:
     ports:
       - "8123:80"
     restart: always
+    networks:
+      - app-network
+    depends_on:
+      - backend
+
+  backend:
+    image: bookstack-sync-spring_bookstack-sync
+    container_name: bookstack-sync
+    ports:
+      - "8080:8080"
+    restart: always
+    networks:
+      - app-network
+    # You can add environment variables for the backend if needed
+    # environment:
+    #   - SPRING_PROFILES_ACTIVE=prod
 
 networks:
-  default:
+  app-network:
     driver: bridge

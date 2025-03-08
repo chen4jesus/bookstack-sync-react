@@ -12,10 +12,24 @@ const DEBUG_API_URL = '/api/debug';
 // Session storage key for configuration
 const CONFIG_SESSION_STORAGE_KEY = 'bookstack_sync_config_session';
 
+// Timeout in milliseconds (5 minutes)
+const API_TIMEOUT = 300000;
+
 interface ApiErrorResponse {
   message?: string;
   error?: string;
   status?: string;
+}
+
+// Define a type for headers to avoid TypeScript errors
+interface ApiHeaders {
+  'X-Source-Url'?: string;
+  'X-Source-Token'?: string;
+  'X-Source-Token-Id'?: string;
+  'X-Destination-Url'?: string;
+  'X-Destination-Token'?: string;
+  'X-Destination-Token-Id'?: string;
+  [key: string]: string | undefined;
 }
 
 // Create axios instance with default config
@@ -25,7 +39,9 @@ const apiClient = axios.create({
     'Accept': 'application/json'
   },
   // Don't send cookies with requests
-  withCredentials: false
+  withCredentials: false,
+  // Set timeout to 5 minutes
+  timeout: API_TIMEOUT
 });
 
 class SpringBootApi {
@@ -63,17 +79,16 @@ class SpringBootApi {
   async listBooks(): Promise<Book[]> {
     try {
       const config = await this.getConfig();
-      let headers = {};
+      const headers: ApiHeaders = {};
       
       if (config) {
-        headers = {
-          'X-Source-Url': config.sourceBaseUrl,
-          'X-Source-Token': config.sourceTokenSecret,
-          'X-Source-Token-Id': config.sourceTokenId
-        };
+        headers['X-Source-Url'] = config.sourceBaseUrl;
+        headers['X-Source-Token'] = config.sourceTokenSecret;
+        headers['X-Source-Token-Id'] = config.sourceTokenId;
       }
       
-      const response = await axios.get(`${SPRING_BOOT_API_URL}/books`, { headers });
+      // Use apiClient instead of axios directly to benefit from the timeout setting
+      const response = await apiClient.get(`${SPRING_BOOT_API_URL}/books`, { headers });
       return response.data;
     } catch (error) {
       this.handleError(error);
@@ -86,17 +101,15 @@ class SpringBootApi {
   async getBook(id: number): Promise<Book> {
     try {
       const config = await this.getConfig();
-      let headers = {};
+      const headers: ApiHeaders = {};
       
       if (config) {
-        headers = {
-          'X-Source-Url': config.sourceBaseUrl,
-          'X-Source-Token': config.sourceTokenSecret,
-          'X-Source-Token-Id': config.sourceTokenId
-        };
+        headers['X-Source-Url'] = config.sourceBaseUrl;
+        headers['X-Source-Token'] = config.sourceTokenSecret;
+        headers['X-Source-Token-Id'] = config.sourceTokenId;
       }
       
-      const response = await axios.get(`${SPRING_BOOT_API_URL}/books/${id}`, { headers });
+      const response = await apiClient.get(`${SPRING_BOOT_API_URL}/books/${id}`, { headers });
       return response.data;
     } catch (error) {
       this.handleError(error);
@@ -104,72 +117,46 @@ class SpringBootApi {
   }
 
   /**
-   * Synchronize a book from the source to the destination BookStack instance
+   * Sync a book from source to destination
    */
   async syncBook(sourceBookId: number): Promise<void> {
     try {
       const config = await this.getConfig();
-      let headers = {};
+      const headers: ApiHeaders = {};
       
       if (config) {
-        headers = {
-          'X-Source-Url': config.sourceBaseUrl,
-          'X-Source-Token': config.sourceTokenSecret,
-          'X-Source-Token-Id': config.sourceTokenId,
-          'X-Destination-Url': config.destinationBaseUrl,
-          'X-Destination-Token': config.destinationTokenSecret,
-          'X-Destination-Token-Id': config.destinationTokenId
-        };
+        headers['X-Source-Url'] = config.sourceBaseUrl;
+        headers['X-Source-Token'] = config.sourceTokenSecret;
+        headers['X-Source-Token-Id'] = config.sourceTokenId;
+        headers['X-Destination-Url'] = config.destinationBaseUrl;
+        headers['X-Destination-Token'] = config.destinationTokenSecret;
+        headers['X-Destination-Token-Id'] = config.destinationTokenId;
       }
       
-      const response = await axios.post(`${SPRING_BOOT_API_URL}/books/${sourceBookId}`, {}, { headers });
-      if (response.status !== 200) {
-        throw new Error(`Failed to sync book: ${response.data.message || 'Unknown error'}`);
-      }
+      await apiClient.post(`${SPRING_BOOT_API_URL}/books/${sourceBookId}`, {}, { headers });
     } catch (error) {
       this.handleError(error);
     }
   }
 
   /**
-   * Synchronize multiple books from the source to the destination BookStack instance
+   * Sync multiple books from source to destination
    */
   async syncBooks(sourceBookIds: number[]): Promise<{[key: number]: boolean}> {
-    const results: {[key: number]: boolean} = {};
-    
-    for (const id of sourceBookIds) {
-      try {
-        await this.syncBook(id);
-        results[id] = true;
-      } catch (error) {
-        console.error(`Error syncing book ${id}:`, error);
-        results[id] = false;
-      }
-    }
-    
-    return results;
-  }
-
-  /**
-   * Verify API credentials for both source and destination BookStack instances
-   */
-  async verifyCredentials(): Promise<{ sourceCredentialsValid: boolean; destinationCredentialsValid?: boolean }> {
     try {
       const config = await this.getConfig();
-      let headers = {};
+      const headers: ApiHeaders = {};
       
       if (config) {
-        headers = {
-          'X-Source-Url': config.sourceBaseUrl,
-          'X-Source-Token': config.sourceTokenSecret,
-          'X-Source-Token-Id': config.sourceTokenId,
-          'X-Destination-Url': config.destinationBaseUrl,
-          'X-Destination-Token': config.destinationTokenSecret,
-          'X-Destination-Token-Id': config.destinationTokenId
-        };
+        headers['X-Source-Url'] = config.sourceBaseUrl;
+        headers['X-Source-Token'] = config.sourceTokenSecret;
+        headers['X-Source-Token-Id'] = config.sourceTokenId;
+        headers['X-Destination-Url'] = config.destinationBaseUrl;
+        headers['X-Destination-Token'] = config.destinationTokenSecret;
+        headers['X-Destination-Token-Id'] = config.destinationTokenId;
       }
       
-      const response = await axios.get(`${SPRING_BOOT_API_URL}/verify`, { headers });
+      const response = await apiClient.post(`${SPRING_BOOT_API_URL}/books`, sourceBookIds, { headers });
       return response.data;
     } catch (error) {
       this.handleError(error);
@@ -177,11 +164,47 @@ class SpringBootApi {
   }
 
   /**
-   * Get raw API response for debugging
+   * Verify credentials for source and destination
+   */
+  async verifyCredentials(): Promise<{ sourceCredentialsValid: boolean; destinationCredentialsValid?: boolean }> {
+    try {
+      const config = await this.getConfig();
+      const headers: ApiHeaders = {};
+      
+      if (config) {
+        headers['X-Source-Url'] = config.sourceBaseUrl;
+        headers['X-Source-Token'] = config.sourceTokenSecret;
+        headers['X-Source-Token-Id'] = config.sourceTokenId;
+        
+        if (config.destinationBaseUrl && config.destinationTokenId && config.destinationTokenSecret) {
+          headers['X-Destination-Url'] = config.destinationBaseUrl;
+          headers['X-Destination-Token'] = config.destinationTokenSecret;
+          headers['X-Destination-Token-Id'] = config.destinationTokenId;
+        }
+      }
+      
+      const response = await apiClient.post(`${SPRING_BOOT_API_URL}/verify`, {}, { headers });
+      return response.data;
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
+
+  /**
+   * Get raw books data for debugging
    */
   async getRawBooks(): Promise<string> {
     try {
-      const response = await axios.get(`${DEBUG_API_URL}/raw-books`);
+      const config = await this.getConfig();
+      const headers: ApiHeaders = {};
+      
+      if (config) {
+        headers['X-Source-Url'] = config.sourceBaseUrl;
+        headers['X-Source-Token'] = config.sourceTokenSecret;
+        headers['X-Source-Token-Id'] = config.sourceTokenId;
+      }
+      
+      const response = await apiClient.get(`${DEBUG_API_URL}/books`, { headers });
       return response.data;
     } catch (error) {
       this.handleError(error);

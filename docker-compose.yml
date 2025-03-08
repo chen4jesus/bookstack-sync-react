@@ -22,20 +22,20 @@ services:
       retries: 3
       start_period: 10s
 
-  # Backend service configuration - can be commented out if not available
-  backend:
-    image: bookstack-sync
-    container_name: bookstack-sync
-    ports:
-      - "8080:8080"
-    restart: on-failure
-    networks:
-      - app-network
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
-    volumes:
-      - backend-data:/data
-    # Optional: you can comment out the entire backend service if not needed
+  # Backend service configuration - COMMENTED OUT by default
+  # Uncomment this section when you have a valid backend image
+  # backend:
+  #   image: bookstack-sync
+  #   container_name: bookstack-sync
+  #   ports:
+  #     - "8080:8080"
+  #   restart: on-failure
+  #   networks:
+  #     - app-network
+  #   environment:
+  #     - SPRING_PROFILES_ACTIVE=prod
+  #   volumes:
+  #     - backend-data:/data
 
 networks:
   app-network:

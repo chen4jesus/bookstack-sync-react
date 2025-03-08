@@ -183,7 +183,7 @@ class SpringBootApi {
         }
       }
       
-      const response = await apiClient.post(`${SPRING_BOOT_API_URL}/verify`, {}, { headers });
+      const response = await apiClient.get(`${SPRING_BOOT_API_URL}/verify`, {}, { headers });
       return response.data;
     } catch (error) {
       this.handleError(error);

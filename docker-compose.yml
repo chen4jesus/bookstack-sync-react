@@ -7,25 +7,33 @@ services:
       dockerfile: Dockerfile
     container_name: react-app
     ports:
-      - "8123:80"
+      - "${FRONTEND_PORT:-8123}:80"
     restart: always
     networks:
       - app-network
     depends_on:
       - backend
+    environment:
+      - NODE_ENV=production
 
   backend:
     image: bookstack-sync-spring_bookstack-sync
     container_name: bookstack-sync
     ports:
-      - "8080:8080"
+      - "${BACKEND_PORT:-8080}:8080"
     restart: always
     networks:
       - app-network
-    # You can add environment variables for the backend if needed
-    # environment:
-    #   - SPRING_PROFILES_ACTIVE=prod
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES:-prod}
+    # Uncomment if you need volumes for data persistence
+    # volumes:
+    #   - backend-data:/data
 
 networks:
   app-network:
     driver: bridge
+
+# Uncomment if you need volumes
+# volumes:
+#   backend-data:

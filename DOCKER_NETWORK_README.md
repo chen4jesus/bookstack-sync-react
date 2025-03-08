@@ -1,18 +1,34 @@
-# Connecting Frontend and Backend Docker Containers
+# Connecting Frontend and Backend Docker Containers for VPS Deployment
 
-This guide provides instructions for connecting your React frontend and Spring Boot backend Docker containers to work together without CORS errors.
+This guide provides instructions for connecting your React frontend and Spring Boot backend Docker containers to work together without CORS errors on any VPS with an IP address.
 
 ## Overview
 
-The solution involves three main components:
+The solution involves four main components:
 
-1. **Nginx Configuration**: Configure Nginx in the frontend container to proxy API requests to the backend
-2. **Docker Compose Network**: Create a shared network between the containers
-3. **CORS Configuration**: Enable CORS in the Spring Boot backend
+1. **Frontend API Configuration**: Use relative URLs instead of hardcoded localhost URLs
+2. **Nginx Configuration**: Configure Nginx in the frontend container to proxy API requests to the backend
+3. **Docker Compose Network**: Create a shared network between the containers
+4. **Environment Variables**: Use environment variables for flexible deployment
 
 ## Implementation Steps
 
-### 1. Update the Nginx Configuration
+### 1. Update the Frontend API Configuration
+
+The API URLs in `src/services/springBootApi.ts` have been updated to use relative paths:
+
+```typescript
+// Use relative URLs instead of hardcoded localhost URLs
+// This will make API requests go to the same host that serves the frontend
+const SPRING_BOOT_API_URL = '/api/sync';
+
+// Debug API URL
+const DEBUG_API_URL = '/api/debug';
+```
+
+This change makes the frontend application work on any server without hardcoded URLs.
+
+### 2. Update the Nginx Configuration
 
 The `nginx.conf` file has been updated to proxy API requests to the backend service:
 
@@ -28,18 +44,36 @@ location /api/ {
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Port $server_port;
     proxy_cache_bypass $http_upgrade;
     
     # Handle timeouts
     proxy_connect_timeout 10s;
     proxy_send_timeout 10s;
     proxy_read_timeout 10s;
+    
+    # Add CORS headers for browsers that request directly to the backend
+    add_header 'Access-Control-Allow-Origin' '*' always;
+    add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT, DELETE' always;
+    add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization' always;
+    
+    # Handle preflight requests
+    if ($request_method = 'OPTIONS') {
+        add_header 'Access-Control-Allow-Origin' '*' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, PUT, DELETE' always;
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization' always;
+        add_header 'Access-Control-Max-Age' 1728000 always;
+        add_header 'Content-Type' 'text/plain; charset=utf-8' always;
+        add_header 'Content-Length' 0 always;
+        return 204;
+    }
 }
 ```
 
-### 2. Update the Docker Compose Configuration
+### 3. Update the Docker Compose Configuration
 
-The `docker-compose.yml` file has been updated to create a network between the containers:
+The `docker-compose.yml` file has been updated to use environment variables for flexible deployment:
 
 ```yaml
 version: '3.8'
@@ -51,105 +85,105 @@ services:
       dockerfile: Dockerfile
     container_name: react-app
     ports:
-      - "8123:80"
+      - "${FRONTEND_PORT:-8123}:80"
     restart: always
     networks:
       - app-network
     depends_on:
       - backend
+    environment:
+      - NODE_ENV=production
 
   backend:
     image: bookstack-sync-spring_bookstack-sync
     container_name: bookstack-sync
     ports:
-      - "8080:8080"
+      - "${BACKEND_PORT:-8080}:8080"
     restart: always
     networks:
       - app-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES:-prod}
 
 networks:
   app-network:
     driver: bridge
 ```
 
-### 3. Enable CORS in the Spring Boot Backend
+### 4. Environment Variables
 
-Add a CORS configuration class to your Spring Boot application:
+A `.env` file has been created to store environment variables:
 
-```java
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
+```
+# Frontend configuration
+FRONTEND_PORT=8123
 
-@Configuration
-public class CorsConfig {
-
-    @Bean
-    public CorsFilter corsFilter() {
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        CorsConfiguration config = new CorsConfiguration();
-        
-        // Allow all origins, headers, and methods
-        config.addAllowedOrigin("*");
-        config.addAllowedHeader("*");
-        config.addAllowedMethod("*");
-        
-        // Allow credentials
-        config.setAllowCredentials(true);
-        
-        // Apply this configuration to all paths
-        source.registerCorsConfiguration("/**", config);
-        
-        return new CorsFilter(source);
-    }
-}
+# Backend configuration
+BACKEND_PORT=8080
+SPRING_PROFILES=prod
 ```
 
-Alternatively, you can add the following properties to your `application.properties` or `application.yml` file:
+You can customize these variables for different deployment environments.
 
-```properties
-# application.properties
-spring.web.cors.allowed-origins=*
-spring.web.cors.allowed-methods=GET,POST,PUT,DELETE,OPTIONS
-spring.web.cors.allowed-headers=*
-spring.web.cors.allow-credentials=true
-```
+## Deployment on a VPS
 
-```yaml
-# application.yml
-spring:
-  web:
-    cors:
-      allowed-origins: "*"
-      allowed-methods: GET,POST,PUT,DELETE,OPTIONS
-      allowed-headers: "*"
-      allow-credentials: true
-```
+1. **Prepare your VPS**:
+   - Install Docker and Docker Compose
+   - Open the necessary ports in your firewall (8123 for frontend, 8080 for backend)
 
-## Deployment
-
-1. **Stop the existing containers**:
+2. **Upload your application files to the VPS**:
    ```bash
-   docker-compose down
+   scp -r ./* user@your-vps-ip:/path/to/application
    ```
 
-2. **Rebuild and start the containers**:
+3. **SSH into your VPS**:
+   ```bash
+   ssh user@your-vps-ip
+   ```
+
+4. **Navigate to your application directory**:
+   ```bash
+   cd /path/to/application
+   ```
+
+5. **Customize the .env file if needed**:
+   ```bash
+   nano .env
+   ```
+
+6. **Deploy the application**:
    ```bash
    docker-compose up -d --build
    ```
 
-3. **Verify the deployment**:
+7. **Verify the deployment**:
    ```bash
    docker-compose ps
    ```
+
+8. **Access your application**:
+   - Frontend: http://your-vps-ip:8123
+   - Backend API: http://your-vps-ip:8080/api
+
+## Using a Domain Name
+
+If you have a domain name, you can configure it to point to your VPS:
+
+1. **Update your DNS records** to point to your VPS IP address
+
+2. **Configure Nginx** to use your domain name:
+   ```nginx
+   server_name yourdomain.com www.yourdomain.com;
+   ```
+
+3. **Set up SSL** with Let's Encrypt for secure HTTPS connections
 
 ## Troubleshooting
 
 - **Container not starting**: Check logs with `docker-compose logs`
 - **Network issues**: Verify that both containers are on the same network with `docker network inspect app-network`
 - **CORS errors still occurring**: Check that the CORS configuration is properly applied in the Spring Boot application
+- **Cannot access the application**: Verify that your VPS firewall allows traffic on the configured ports
 
 ## Security Considerations
 
@@ -157,4 +191,6 @@ spring:
   - Replace `*` with specific origins in the CORS configuration
   - Use HTTPS for secure communication
   - Implement proper authentication and authorization
-  - Set up proper firewall rules on your VPS 
+  - Set up proper firewall rules on your VPS
+  - Use environment variables for sensitive information
+  - Regularly update your Docker images 

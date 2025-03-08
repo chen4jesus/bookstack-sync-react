@@ -2,11 +2,12 @@ import axios, { AxiosError } from 'axios';
 import { Book } from './bookstackApi';
 import { BookStackConfigDTO } from '../components/ConfigForm';
 
-// Base URL for the Spring Boot backend
-const SPRING_BOOT_API_URL = 'http://localhost:8080/api/sync';
+// Use relative URLs instead of hardcoded localhost URLs
+// This will make API requests go to the same host that serves the frontend
+const SPRING_BOOT_API_URL = '/api/sync';
 
 // Debug API URL
-const DEBUG_API_URL = 'http://localhost:8080/api/debug';
+const DEBUG_API_URL = '/api/debug';
 
 // Session storage key for configuration
 const CONFIG_SESSION_STORAGE_KEY = 'bookstack_sync_config_session';

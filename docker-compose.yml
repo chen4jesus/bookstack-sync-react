@@ -9,22 +9,37 @@ services:
     ports:
       - "8123:80"
     restart: always
+    networks:
+      - app-network
     # Uncomment if you need environment variables
     # environment:
     #   - NODE_ENV=production
+    # No depends_on to ensure frontend starts regardless of backend status
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
-  # Backend service - uncomment and configure when you have a real backend image
+  # Backend service configuration - can be commented out if not available
   backend:
     image: bookstack-sync
     container_name: bookstack-sync
     ports:
       - "8080:8080"
-    restart: always
+    restart: on-failure
+    networks:
       - app-network
     environment:
       - SPRING_PROFILES_ACTIVE=prod
     volumes:
       - backend-data:/data
+    # Optional: you can comment out the entire backend service if not needed
+
+networks:
+  app-network:
+    driver: bridge
 
 # Volume declaration for backend data persistence
 volumes:

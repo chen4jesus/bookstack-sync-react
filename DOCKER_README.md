@@ -50,9 +50,17 @@ bash deploy.sh
 - Frontend: The React application runs on port 8123
 - Backend: The backend service runs on port 8080
 
+### Frontend Independence
+
+The frontend is configured to run independently of the backend service. This means:
+
+- The frontend will start and run even if the backend is unavailable
+- API requests to the backend will gracefully handle failures with appropriate error messages
+- The frontend container includes health checks that monitor but don't depend on the backend
+
 ### Backend Service
 
-The backend service is configured in the docker-compose.yml file. The configuration includes:
+The backend service is optional and can be commented out in the docker-compose.yml file if not needed. If you want to use it, the configuration includes:
 
 1. The backend image: `bookstack-sync`
 2. Environment variables for the Spring Boot application
@@ -68,12 +76,31 @@ The application uses a Docker volume named `backend-data` to persist data. This 
 
 After deployment, your application will be available at:
 - http://your-server-ip:8123 (Frontend)
-- http://your-server-ip:8080 (Backend API)
+- http://your-server-ip:8080 (Backend API, if running)
 
 To configure HTTPS:
 1. Obtain SSL certificates
 2. Update the Nginx configuration to use SSL
 3. Update the ports in docker-compose.yml to include port 443
+
+## Running Without Backend
+
+To run the frontend without the backend:
+
+1. Comment out the entire backend service section in docker-compose.yml:
+   ```yaml
+   # Backend service configuration - can be commented out if not available
+   # backend:
+   #   image: bookstack-sync
+   #   ...
+   ```
+
+2. Deploy as usual:
+   ```bash
+   docker-compose up -d --build
+   ```
+
+The frontend will run normally, and any API requests will receive appropriate error responses.
 
 ## Maintenance Commands
 

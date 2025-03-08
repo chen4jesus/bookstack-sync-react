@@ -26,6 +26,12 @@ services:
       - app-network
     environment:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES:-prod}
+      # Add CORS configuration environment variables
+      - SPRING_WEB_CORS_ALLOWED-ORIGINS=*
+      - SPRING_WEB_CORS_ALLOWED-METHODS=GET,POST,PUT,DELETE,OPTIONS
+      - SPRING_WEB_CORS_ALLOWED-HEADERS=*
+      - SPRING_WEB_CORS_ALLOW-CREDENTIALS=false
+      - SPRING_WEB_CORS_MAX-AGE=3600
     # Uncomment if you need volumes for data persistence
     # volumes:
     #   - backend-data:/data
@@ -33,6 +39,8 @@ services:
 networks:
   app-network:
     driver: bridge
+    # Explicitly set the name to avoid name conflicts
+    name: bookstack_network
 
 # Uncomment if you need volumes
 # volumes:

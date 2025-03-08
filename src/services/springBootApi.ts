@@ -18,6 +18,16 @@ interface ApiErrorResponse {
   status?: string;
 }
 
+// Create axios instance with default config
+const apiClient = axios.create({
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  // Don't send cookies with requests
+  withCredentials: false
+});
+
 class SpringBootApi {
   /**
    * Get the current configuration from session storage

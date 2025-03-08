@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: react-app
+    ports:
+      - "8123:80"
+    restart: always
+    networks:
+      - app-network
+    # Uncomment if you need environment variables
+    # environment:
+    #   - NODE_ENV=production
+
+  # Backend service - uncomment and configure when you have a real backend image
+  backend:
+    image: bookstack-sync
+    container_name: bookstack-sync
+    ports:
+      - "8080:8080"
+    restart: always
+    networks:
+      - app-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    volumes:
+    - backend-data:/data
+
+  networks:
+    app-network:
+      driver: bridge
+
+# Uncomment if you need volumes
+# volumes:
+#   backend-data: 

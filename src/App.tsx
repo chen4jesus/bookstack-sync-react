@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Book } from './services/bookstackApi'
 import SpringBootApi from './services/springBootApi'
-import { ConfigForm } from './components/ConfigForm'
+import { ConfigForm, CONFIG_UPDATED_EVENT } from './components/ConfigForm'
 import './App.css'
 
 // Create a single instance of the Spring Boot API
@@ -58,25 +58,59 @@ function App() {
   const [activeBook, setActiveBook] = useState<Book | null>(null)
   const [activeTab, setActiveTab] = useState<'books' | 'config'>('books')
 
-  // Check if the Spring Boot API is available and if configuration is set
-  useEffect(() => {
-    const checkApiStatus = async () => {
-      try {
-        const config = await springBootApi.getConfig();
-        const result = await springBootApi.verifyCredentials();
-        
-        if (config) {
-          setApiStatus(`Connected to Spring Boot API. Using custom configuration.`);
-        } else {
-          setApiStatus('Connected to Spring Boot API. Using default configuration.');
+  // Function to check API status and configuration
+  const checkApiStatus = async () => {
+    try {
+      const config = await springBootApi.getConfig();
+      
+      if (config) {
+        try {
+          const result = await springBootApi.verifyCredentials();
+          if (result.sourceCredentialsValid) {
+            setApiStatus(`Connected to Spring Boot API. Using custom configuration.`);
+          } else {
+            setApiStatus('Connected to Spring Boot API, but source credentials are invalid.');
+          }
+        } catch (err) {
+          setApiStatus('Connected to Spring Boot API, but credentials verification failed.');
+          console.error(err);
         }
-      } catch (err) {
-        setApiStatus('Unable to connect to Spring Boot API. Make sure it is running.');
-        console.error(err);
+      } else {
+        setApiStatus('Connected to Spring Boot API. Using default configuration.');
       }
+    } catch (err) {
+      setApiStatus('Unable to connect to Spring Boot API. Make sure it is running.');
+      console.error(err);
     }
+  }
+
+  // Check API status on component mount
+  useEffect(() => {
     checkApiStatus();
+    
+    // Add event listener for config updates
+    const handleConfigUpdate = () => {
+      checkApiStatus();
+      // Clear books when config changes to force a reload
+      setBooks([]);
+    };
+    
+    window.addEventListener(CONFIG_UPDATED_EVENT, handleConfigUpdate);
+    
+    // Clean up event listener on component unmount
+    return () => {
+      window.removeEventListener(CONFIG_UPDATED_EVENT, handleConfigUpdate);
+    };
   }, []);
+
+  // Handle tab change
+  const handleTabChange = (tab: 'books' | 'config') => {
+    setActiveTab(tab);
+    if (tab === 'books') {
+      // Refresh API status when switching to books tab
+      checkApiStatus();
+    }
+  };
 
   const loadBooks = async () => {
     try {
@@ -174,7 +208,7 @@ function App() {
         <p className="text-center text-gray-600">Synchronize books between BookStack instances</p>
         
         {apiStatus && (
-          <div className={`mt-4 text-center text-sm ${apiStatus.includes('Unable') ? 'text-red-600' : 'text-green-600'}`}>
+          <div className={`mt-4 text-center text-sm ${apiStatus.includes('Unable') || apiStatus.includes('invalid') || apiStatus.includes('failed') ? 'text-red-600' : 'text-green-600'}`}>
             {apiStatus}
           </div>
         )}
@@ -184,7 +218,7 @@ function App() {
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex">
             <button
-              onClick={() => setActiveTab('books')}
+              onClick={() => handleTabChange('books')}
               className={`py-2 px-4 text-center border-b-2 font-medium text-sm ${
                 activeTab === 'books'
                   ? 'border-indigo-500 text-indigo-600'
@@ -194,7 +228,7 @@ function App() {
               Books
             </button>
             <button
-              onClick={() => setActiveTab('config')}
+              onClick={() => handleTabChange('config')}
               className={`py-2 px-4 text-center border-b-2 font-medium text-sm ${
                 activeTab === 'config'
                   ? 'border-indigo-500 text-indigo-600'
@@ -222,7 +256,7 @@ function App() {
                       
                       {/* API Status */}
                       {apiStatus && (
-                        <div className={`mt-4 p-4 ${apiStatus.includes('Unable') ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'} rounded-md`}>
+                        <div className={`mt-4 p-4 ${apiStatus.includes('Unable') || apiStatus.includes('invalid') || apiStatus.includes('failed') ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'} rounded-md`}>
                           {apiStatus}
                         </div>
                       )}
@@ -231,7 +265,7 @@ function App() {
                       <div className="mb-8">
                         <button
                           onClick={loadBooks}
-                          disabled={loading || apiStatus?.includes('Unable')}
+                          disabled={loading || apiStatus?.includes('Unable') || apiStatus?.includes('invalid') || apiStatus?.includes('failed')}
                           className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
                         >
                           {loading && !books.length ? 'Loading...' : 'Load Books'}
@@ -314,7 +348,7 @@ function App() {
                       {books.length > 0 && (
                         <button
                           onClick={handleSync}
-                          disabled={loading || apiStatus?.includes('Unable') || selectedBookIds.length === 0}
+                          disabled={loading || apiStatus?.includes('Unable') || apiStatus?.includes('invalid') || apiStatus?.includes('failed') || selectedBookIds.length === 0}
                           className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
                         >
                           {loading ? 'Syncing...' : `Sync ${selectedBookIds.length} Selected Book${selectedBookIds.length !== 1 ? 's' : ''}`}

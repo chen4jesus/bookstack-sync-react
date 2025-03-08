@@ -8,8 +8,8 @@ const SPRING_BOOT_API_URL = 'http://localhost:8080/api/sync';
 // Debug API URL
 const DEBUG_API_URL = 'http://localhost:8080/api/debug';
 
-// Local storage key for configuration
-const CONFIG_STORAGE_KEY = 'bookstack_sync_config';
+// Session storage key for configuration
+const CONFIG_SESSION_STORAGE_KEY = 'bookstack_sync_config_session';
 
 interface ApiErrorResponse {
   message?: string;
@@ -19,32 +19,28 @@ interface ApiErrorResponse {
 
 class SpringBootApi {
   /**
-   * Get the current configuration from local storage
+   * Get the current configuration from session storage
    */
   async getConfig(): Promise<BookStackConfigDTO | null> {
     try {
-      const configJson = localStorage.getItem(CONFIG_STORAGE_KEY);
+      const configJson = sessionStorage.getItem(CONFIG_SESSION_STORAGE_KEY);
       return configJson ? JSON.parse(configJson) : null;
     } catch (error) {
-      console.error('Error getting config from local storage:', error);
+      console.error('Error getting config from session storage:', error);
       return null;
     }
   }
 
   /**
-   * Save configuration to local storage and send to backend
+   * Save configuration to session storage
    */
   async saveConfig(config: BookStackConfigDTO): Promise<void> {
     try {
-      // Save to local storage
-      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(config));
+      // Save to session storage (persists during browser session but clears on tab close)
+      sessionStorage.setItem(CONFIG_SESSION_STORAGE_KEY, JSON.stringify(config));
       
-      // Send to backend
-      const response = await axios.post(`${SPRING_BOOT_API_URL}/config`, config);
-      
-      if (response.status !== 200) {
-        throw new Error(response.data.message || 'Failed to update configuration');
-      }
+      // No need to send to backend anymore as we'll pass credentials with each request
+      return Promise.resolve();
     } catch (error) {
       this.handleError(error);
     }

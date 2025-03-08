@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Book } from './services/bookstackApi'
 import SpringBootApi from './services/springBootApi'
+import { ConfigForm } from './components/ConfigForm'
 import './App.css'
 
 // Create a single instance of the Spring Boot API
@@ -55,20 +56,27 @@ function App() {
   const [apiStatus, setApiStatus] = useState<string | null>(null)
   const [syncProgress, setSyncProgress] = useState<{[key: number]: string}>({})
   const [activeBook, setActiveBook] = useState<Book | null>(null)
+  const [activeTab, setActiveTab] = useState<'books' | 'config'>('books')
 
-  // Check if the Spring Boot API is available
+  // Check if the Spring Boot API is available and if configuration is set
   useEffect(() => {
     const checkApiStatus = async () => {
       try {
-        await springBootApi.verifyCredentials()
-        setApiStatus('Connected to Spring Boot API')
+        const config = await springBootApi.getConfig();
+        const result = await springBootApi.verifyCredentials();
+        
+        if (config) {
+          setApiStatus(`Connected to Spring Boot API. Using custom configuration.`);
+        } else {
+          setApiStatus('Connected to Spring Boot API. Using default configuration.');
+        }
       } catch (err) {
-        setApiStatus('Unable to connect to Spring Boot API. Make sure it is running.')
-        console.error(err)
+        setApiStatus('Unable to connect to Spring Boot API. Make sure it is running.');
+        console.error(err);
       }
     }
-    checkApiStatus()
-  }, [])
+    checkApiStatus();
+  }, []);
 
   const loadBooks = async () => {
     try {
@@ -160,155 +168,188 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
-      <div className="relative py-3 px-4 sm:px-6 w-full max-w-5xl mx-auto">
-        <div className="relative px-4 py-8 sm:py-10 bg-white shadow-lg rounded-xl sm:rounded-3xl sm:p-12 md:p-16">
-          <div className="w-full mx-auto">
-            <div className="divide-y divide-gray-200">
-              <div className="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
-                <h1 className="text-3xl font-bold text-center mb-8">BookStack Sync Tool</h1>
-                
-                {/* API Status */}
-                {apiStatus && (
-                  <div className={`mt-4 p-4 ${apiStatus.includes('Unable') ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'} rounded-md`}>
-                    {apiStatus}
-                  </div>
-                )}
+    <div className="container mx-auto px-4 py-8">
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold text-center text-gray-800 mb-2">BookStack Sync Tool</h1>
+        <p className="text-center text-gray-600">Synchronize books between BookStack instances</p>
+        
+        {apiStatus && (
+          <div className={`mt-4 text-center text-sm ${apiStatus.includes('Unable') ? 'text-red-600' : 'text-green-600'}`}>
+            {apiStatus}
+          </div>
+        )}
+      </header>
 
-                {/* Load Books Button */}
-                <div className="mb-8">
-                  <button
-                    onClick={loadBooks}
-                    disabled={loading || apiStatus?.includes('Unable')}
-                    className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-                  >
-                    {loading && !books.length ? 'Loading...' : 'Load Books'}
-                  </button>
-                </div>
+      <div className="mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex">
+            <button
+              onClick={() => setActiveTab('books')}
+              className={`py-2 px-4 text-center border-b-2 font-medium text-sm ${
+                activeTab === 'books'
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Books
+            </button>
+            <button
+              onClick={() => setActiveTab('config')}
+              className={`py-2 px-4 text-center border-b-2 font-medium text-sm ${
+                activeTab === 'config'
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Configuration
+            </button>
+          </nav>
+        </div>
+      </div>
 
-                {/* Book Selection */}
-                {books.length > 0 && (
-                  <div className="mb-8">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-semibold">Select Books to Sync</h2>
-                      <button
-                        onClick={handleSelectAll}
-                        className="text-sm text-indigo-600 hover:text-indigo-800"
-                      >
-                        {selectedBookIds.length === books.length ? 'Deselect All' : 'Select All'}
-                      </button>
-                    </div>
-                    
-                    <div className="max-h-96 overflow-y-auto border border-gray-200 rounded-md">
-                      {books.map((book) => (
-                        <div 
-                          key={book.id} 
-                          className={`flex items-center p-3 border-b border-gray-200 hover:bg-gray-50 cursor-pointer ${
-                            selectedBookIds.includes(book.id) ? 'bg-indigo-50' : ''
-                          }`}
-                          onClick={() => handleBookSelection(book.id)}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedBookIds.includes(book.id)}
-                            onChange={() => {}} // Handled by the div click
-                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                          />
-                          <div className="ml-3 flex-grow">
-                            <span className="block font-medium text-left">{book.name}</span>
-                            {book.description && (
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-500 truncate text-left mr-2" style={{ maxWidth: 'calc(100% - 70px)' }}>
-                                  {book.description.length > 40 
-                                    ? book.description.substring(0, 40) + '...' 
-                                    : book.description}
-                                </span>
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setActiveBook(book);
-                                  }}
-                                  className="text-xs text-indigo-600 hover:text-indigo-800 font-medium px-2 py-1 rounded-full bg-indigo-50 hover:bg-indigo-100 focus:outline-none flex-shrink-0"
-                                >
-                                  Details
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                          {syncProgress[book.id] && (
-                            <span className={`text-sm px-2 py-1 rounded whitespace-nowrap ml-2 ${
-                              syncProgress[book.id] === 'Completed' 
-                                ? 'bg-green-100 text-green-800' 
-                                : syncProgress[book.id] === 'Failed'
-                                  ? 'bg-red-100 text-red-800'
-                                  : syncProgress[book.id] === 'Pending'
-                                    ? 'bg-gray-100 text-gray-800'
-                                    : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {syncProgress[book.id]}
-                            </span>
-                          )}
+      {activeTab === 'config' ? (
+        <ConfigForm />
+      ) : (
+        // Books tab content
+        <>
+          <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
+            <div className="relative py-3 px-4 sm:px-6 w-full max-w-5xl mx-auto">
+              <div className="relative px-4 py-8 sm:py-10 bg-white shadow-lg rounded-xl sm:rounded-3xl sm:p-12 md:p-16">
+                <div className="w-full mx-auto">
+                  <div className="divide-y divide-gray-200">
+                    <div className="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
+                      <h1 className="text-3xl font-bold text-center mb-8">BookStack Sync Tool</h1>
+                      
+                      {/* API Status */}
+                      {apiStatus && (
+                        <div className={`mt-4 p-4 ${apiStatus.includes('Unable') ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'} rounded-md`}>
+                          {apiStatus}
                         </div>
-                      ))}
+                      )}
+
+                      {/* Load Books Button */}
+                      <div className="mb-8">
+                        <button
+                          onClick={loadBooks}
+                          disabled={loading || apiStatus?.includes('Unable')}
+                          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                        >
+                          {loading && !books.length ? 'Loading...' : 'Load Books'}
+                        </button>
+                      </div>
+
+                      {/* Book Selection */}
+                      {books.length > 0 && (
+                        <div className="mb-8">
+                          <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-semibold">Select Books to Sync</h2>
+                            <button
+                              onClick={handleSelectAll}
+                              className="text-sm text-indigo-600 hover:text-indigo-800"
+                            >
+                              {selectedBookIds.length === books.length ? 'Deselect All' : 'Select All'}
+                            </button>
+                          </div>
+                          
+                          <div className="max-h-96 overflow-y-auto border border-gray-200 rounded-md">
+                            {books.map((book) => (
+                              <div 
+                                key={book.id} 
+                                className={`flex items-center p-3 border-b border-gray-200 hover:bg-gray-50 cursor-pointer ${
+                                  selectedBookIds.includes(book.id) ? 'bg-indigo-50' : ''
+                                }`}
+                                onClick={() => handleBookSelection(book.id)}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={selectedBookIds.includes(book.id)}
+                                  onChange={() => {}} // Handled by the div click
+                                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                                />
+                                <div className="ml-3 flex-grow">
+                                  <span className="block font-medium text-left">{book.name}</span>
+                                  {book.description && (
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-sm text-gray-500 truncate text-left mr-2" style={{ maxWidth: 'calc(100% - 70px)' }}>
+                                        {book.description.length > 40 
+                                          ? book.description.substring(0, 40) + '...' 
+                                          : book.description}
+                                      </span>
+                                      <button 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setActiveBook(book);
+                                        }}
+                                        className="text-xs text-indigo-600 hover:text-indigo-800 font-medium px-2 py-1 rounded-full bg-indigo-50 hover:bg-indigo-100 focus:outline-none flex-shrink-0"
+                                      >
+                                        Details
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                                {syncProgress[book.id] && (
+                                  <span className={`text-sm px-2 py-1 rounded whitespace-nowrap ml-2 ${
+                                    syncProgress[book.id] === 'Completed' 
+                                      ? 'bg-green-100 text-green-800' 
+                                      : syncProgress[book.id] === 'Failed'
+                                        ? 'bg-red-100 text-red-800'
+                                        : syncProgress[book.id] === 'Pending'
+                                          ? 'bg-gray-100 text-gray-800'
+                                          : 'bg-yellow-100 text-yellow-800'
+                                  }`}>
+                                    {syncProgress[book.id]}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          
+                          <div className="mt-4 text-sm text-gray-600">
+                            {selectedBookIds.length} of {books.length} books selected
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Sync Button */}
+                      {books.length > 0 && (
+                        <button
+                          onClick={handleSync}
+                          disabled={loading || apiStatus?.includes('Unable') || selectedBookIds.length === 0}
+                          className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+                        >
+                          {loading ? 'Syncing...' : `Sync ${selectedBookIds.length} Selected Book${selectedBookIds.length !== 1 ? 's' : ''}`}
+                        </button>
+                      )}
+
+                      {/* Status Messages */}
+                      {error && (
+                        <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-md">
+                          {error}
+                        </div>
+                      )}
+                      {success && (
+                        <div className="mt-4 p-4 bg-green-50 text-green-700 rounded-md flex justify-between items-center">
+                          <span>{success}</span>
+                          <button 
+                            onClick={() => setSyncProgress({})} 
+                            className="text-sm text-green-700 hover:text-green-900 underline"
+                          >
+                            Clear Status
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    
-                    <div className="mt-4 text-sm text-gray-600">
-                      {selectedBookIds.length} of {books.length} books selected
-                    </div>
                   </div>
-                )}
-
-                {/* Sync Button */}
-                {books.length > 0 && (
-                  <button
-                    onClick={handleSync}
-                    disabled={loading || apiStatus?.includes('Unable') || selectedBookIds.length === 0}
-                    className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-                  >
-                    {loading ? 'Syncing...' : `Sync ${selectedBookIds.length} Selected Book${selectedBookIds.length !== 1 ? 's' : ''}`}
-                  </button>
-                )}
-
-                {/* Status Messages */}
-                {error && (
-                  <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-md">
-                    {error}
-                  </div>
-                )}
-                {success && (
-                  <div className="mt-4 p-4 bg-green-50 text-green-700 rounded-md flex justify-between items-center">
-                    <span>{success}</span>
-                    <button 
-                      onClick={() => setSyncProgress({})} 
-                      className="text-sm text-green-700 hover:text-green-900 underline"
-                    >
-                      Clear Status
-                    </button>
-                  </div>
-                )}
-
-                {/* Description Modal */}
-                {activeBook && (
-                  <DescriptionModal 
-                    book={activeBook} 
-                    onClose={() => setActiveBook(null)} 
-                  />
-                )}
-
-                {/* Note about Spring Boot Backend */}
-                <div className="mt-8 p-4 bg-blue-50 text-blue-700 rounded-md text-sm">
-                  <p><strong>Note:</strong> This application uses a Spring Boot backend for API calls. Make sure the Spring Boot application is running on <code>http://localhost:8080</code>.</p>
-                  <p className="mt-2">The Spring Boot backend is configured with the following credentials:</p>
-                  <ul className="list-disc pl-5 mt-2">
-                    <li>Source: <code>https://books.faithconnect.us</code></li>
-                    <li>Destination: <code>http://172.17.71.2</code></li>
-                  </ul>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
+
+      {activeBook && (
+        <DescriptionModal book={activeBook} onClose={() => setActiveBook(null)} />
+      )}
     </div>
   )
 }

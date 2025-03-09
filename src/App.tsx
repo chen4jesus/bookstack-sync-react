@@ -246,7 +246,7 @@ function App() {
                 <div className="w-full mx-auto">
                   <div className="divide-y divide-gray-200">
                     <div className="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
-                      <h1 className="text-3xl font-bold text-center mb-8">BookStack Sync Tool</h1>
+                      <h1 className="text-3xl font-bold text-center mb-8">BookStack Sync Books</h1>
                       
                       {/* API Status */}
                       {apiStatus && (

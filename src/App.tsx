@@ -206,12 +206,6 @@ function App() {
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-center text-gray-800 mb-2">BookStack Sync Tool</h1>
         <p className="text-center text-gray-600">Synchronize books between BookStack instances</p>
-        
-        {apiStatus && (
-          <div className={`mt-4 text-center text-sm ${apiStatus.includes('Unable') || apiStatus.includes('invalid') || apiStatus.includes('failed') ? 'text-red-600' : 'text-green-600'}`}>
-            {apiStatus}
-          </div>
-        )}
       </header>
 
       <div className="mb-6">

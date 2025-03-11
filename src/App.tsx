@@ -109,6 +109,8 @@ function App() {
   const [bookToDelete, setBookToDelete] = useState<Book | null>(null)
   const [deleteStatus, setDeleteStatus] = useState<{[key: number]: string}>({})
   const [selectedDestinationBookIds, setSelectedDestinationBookIds] = useState<number[]>([])
+  const [showDestroyConfirm, setShowDestroyConfirm] = useState(false)
+  const [destroyStatus, setDestroyStatus] = useState<string | null>(null)
 
   // Function to check API status and configuration
   const checkApiStatus = async () => {
@@ -426,6 +428,29 @@ function App() {
     }
   }
 
+  const handleDestroy = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setSuccess(null);
+      setDestroyStatus('Destroying...');
+      
+      await springBootApi.destroy();
+      
+      setDestroyStatus('Destroyed');
+      setSuccess('All books have been destroyed successfully.');
+      setDestinationBooks([]); // Clear the books list
+      setSelectedDestinationBookIds([]); // Clear selection
+      setShowDestroyConfirm(false);
+    } catch (err) {
+      setError('Failed to destroy books. Please check the Spring Boot API.');
+      setDestroyStatus('Failed');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <header className="mb-8">
@@ -481,8 +506,36 @@ function App() {
                 <div className="w-full mx-auto">
                   <div className="divide-y divide-gray-200">
                     <div className="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
-                      <h1 className="text-3xl font-bold text-center mb-8">Manage Destination Books</h1>
-                      
+                      <div className="flex justify-between items-center mb-8">
+                        <h1 className="text-3xl font-bold">Manage Destination Books</h1>
+                        <div className="flex space-x-4">
+                          {destinationBooks.length > 0 && (
+                            <button
+                              onClick={() => setShowDestroyConfirm(true)}
+                              disabled={loading || destroyStatus === 'Destroying...'}
+                              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 flex items-center space-x-2"
+                            >
+                              {destroyStatus === 'Destroying...' ? (
+                                <>
+                                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  <span>Destroying...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                  <span>Destroy All</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
                       {/* API Status */}
                       {apiStatus && (
                         <div className={`mt-4 p-4 ${apiStatus.includes('Unable') || apiStatus.includes('invalid') || apiStatus.includes('failed') ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'} rounded-md`}>
@@ -776,6 +829,16 @@ function App() {
           message={`Are you sure you want to delete the book "${bookToDelete.name}"? This action cannot be undone.`}
           onConfirm={confirmDeleteBook}
           onCancel={cancelDeleteBook}
+        />
+      )}
+
+      {/* Destroy Confirmation Modal */}
+      {showDestroyConfirm && (
+        <ConfirmationModal 
+          title="Confirm Destroy All Books"
+          message="Are you sure you want to destroy ALL books in the destination BookStack instance? This action cannot be undone and will permanently delete all books."
+          onConfirm={handleDestroy}
+          onCancel={() => setShowDestroyConfirm(false)}
         />
       )}
     </div>

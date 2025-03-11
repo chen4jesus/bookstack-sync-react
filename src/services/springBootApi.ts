@@ -570,6 +570,41 @@ class SpringBootApi {
     }
     throw error;
   }
+
+  async destroy(): Promise<void> {
+    try {
+          const config = await this.getConfig();
+          const headers: ApiHeaders = {};
+
+          if (!config) {
+            console.error(`No configuration found when trying to delete destination book ${bookId}`);
+            throw new Error('Configuration is missing');
+          }
+
+          // Ensure all required destination credentials are present
+          if (!config.destinationBaseUrl || !config.destinationTokenSecret || !config.destinationTokenId) {
+            console.error(`Destination credentials are incomplete for deleting book ${bookId}`);
+            throw new Error('Destination credentials are incomplete');
+          }
+
+          // Add destination credentials to headers
+          headers['X-Destination-Url'] = config.destinationBaseUrl;
+          headers['X-Destination-Token'] = config.destinationTokenSecret;
+          headers['X-Destination-Token-Id'] = config.destinationTokenId;
+
+          console.log(`Destroying destination resources with headers:`, Object.keys(headers));
+
+          const response = await apiClient.delete(`${SPRING_BOOT_API_URL}/destroy`, {
+            headers,
+            timeout: API_TIMEOUT
+          });
+
+          console.log(`Destroy response:`, response.status);
+    } catch (error) {
+        console.error(`Error destroying destination resources ${bookId}:`, error);
+        this.handleError(error);
+    }
+  }
 }
 
 export default SpringBootApi; 

@@ -431,6 +431,116 @@ class SpringBootApi {
   }
 
   /**
+   * List all books from the destination BookStack instance
+   */
+  async listDestinationBooks(): Promise<Book[]> {
+    try {
+      const config = await this.getConfig();
+      const headers: ApiHeaders = {};
+      
+      if (!config) {
+        console.error('No configuration found when trying to list destination books');
+        throw new Error('Configuration is missing');
+      }
+      
+      // Ensure all required destination credentials are present
+      if (!config.destinationBaseUrl || !config.destinationTokenSecret || !config.destinationTokenId) {
+        console.error('Destination credentials are incomplete for listing books');
+        throw new Error('Destination credentials are incomplete');
+      }
+      
+      // Add destination credentials to headers
+      headers['X-Destination-Url'] = config.destinationBaseUrl;
+      headers['X-Destination-Token'] = config.destinationTokenSecret;
+      headers['X-Destination-Token-Id'] = config.destinationTokenId;
+      
+      console.log('Listing destination books with headers:', Object.keys(headers));
+      
+      // Use apiClient instead of axios directly to benefit from the timeout setting
+      const response = await apiClient.get(`${SPRING_BOOT_API_URL}/destination/books`, { 
+        headers,
+        timeout: API_TIMEOUT
+      });
+      
+      console.log('Destination books list response:', response.status, response.data?.length || 0, 'books');
+      return response.data;
+    } catch (error) {
+      console.error('Error listing destination books:', error);
+      this.handleError(error);
+    }
+  }
+
+  /**
+   * Delete a book from the destination BookStack instance
+   */
+  async deleteDestinationBook(bookId: number): Promise<void> {
+    try {
+      const config = await this.getConfig();
+      const headers: ApiHeaders = {};
+      
+      if (!config) {
+        console.error(`No configuration found when trying to delete destination book ${bookId}`);
+        throw new Error('Configuration is missing');
+      }
+      
+      // Ensure all required destination credentials are present
+      if (!config.destinationBaseUrl || !config.destinationTokenSecret || !config.destinationTokenId) {
+        console.error(`Destination credentials are incomplete for deleting book ${bookId}`);
+        throw new Error('Destination credentials are incomplete');
+      }
+      
+      // Add destination credentials to headers
+      headers['X-Destination-Url'] = config.destinationBaseUrl;
+      headers['X-Destination-Token'] = config.destinationTokenSecret;
+      headers['X-Destination-Token-Id'] = config.destinationTokenId;
+      
+      console.log(`Deleting destination book ${bookId} with headers:`, Object.keys(headers));
+      
+      const response = await apiClient.delete(`${SPRING_BOOT_API_URL}/destination/books/${bookId}`, { 
+        headers,
+        timeout: API_TIMEOUT
+      });
+      
+      console.log(`Destination book ${bookId} delete response:`, response.status);
+      return response.data;
+    } catch (error) {
+      console.error(`Error deleting destination book ${bookId}:`, error);
+      this.handleError(error);
+    }
+  }
+
+  /**
+   * Delete multiple books from the destination BookStack instance one by one
+   * This method doesn't use the bulk delete endpoint, but instead calls deleteDestinationBook
+   * for each book ID sequentially, similar to how syncBook works
+   */
+  async deleteDestinationBooksOneByOne(bookIds: number[]): Promise<{[key: number]: boolean}> {
+    try {
+      console.log(`Deleting ${bookIds.length} destination books one by one`);
+      
+      const results: {[key: number]: boolean} = {};
+      
+      // Process each book sequentially
+      for (const bookId of bookIds) {
+        try {
+          // Delete the individual book
+          await this.deleteDestinationBook(bookId);
+          results[bookId] = true;
+        } catch (error) {
+          console.error(`Error deleting destination book ${bookId}:`, error);
+          results[bookId] = false;
+        }
+      }
+      
+      console.log(`Finished deleting books one by one. Results:`, results);
+      return results;
+    } catch (error) {
+      console.error(`Error in deleteDestinationBooksOneByOne:`, error);
+      this.handleError(error);
+    }
+  }
+
+  /**
    * Handle API errors
    */
   private handleError(error: unknown): never {

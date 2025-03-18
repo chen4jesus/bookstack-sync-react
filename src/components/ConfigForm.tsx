@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import SpringBootApi from '../services/springBootApi';
+import { useTranslation } from 'react-i18next';
 
 // Create a single instance of the Spring Boot API
 const springBootApi = new SpringBootApi();
@@ -14,9 +15,10 @@ export interface BookStackConfigDTO {
 }
 
 // Custom event for config updates
-export const CONFIG_UPDATED_EVENT = 'bookstack-config-updated';
+export const CONFIG_UPDATED_EVENT = 'configUpdated';
 
 export function ConfigForm() {
+  const { t } = useTranslation();
   const [config, setConfig] = useState<BookStackConfigDTO>({
     sourceBaseUrl: '',
     sourceTokenId: '',
@@ -102,7 +104,7 @@ export function ConfigForm() {
 
   return (
     <div className="bg-white shadow-md rounded-lg p-6 max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">BookStack Sync Configuration</h2>
+      <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">{t('configuration.title')}</h2>
       
       <div className="mb-6 p-4 bg-blue-50 text-blue-700 rounded-md">
         <p className="text-sm">
@@ -127,9 +129,9 @@ export function ConfigForm() {
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Source BookStack</h3>
+          <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">{t('configuration.sourceSettings')}</h3>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Source URL</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('configuration.sourceUrl')}</label>
             <input
               type="text"
               value={config.sourceBaseUrl}
@@ -139,7 +141,7 @@ export function ConfigForm() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">API Token ID</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('configuration.sourceApiToken')}</label>
             <input
               type="text"
               value={config.sourceTokenId}
@@ -149,7 +151,7 @@ export function ConfigForm() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">API Token</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('configuration.sourceToken')}</label>
             <input
               type="password"
               value={config.sourceTokenSecret}
@@ -161,9 +163,9 @@ export function ConfigForm() {
         </div>
         
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Destination BookStack</h3>
+          <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">{t('configuration.destinationSettings')}</h3>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Destination URL</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('configuration.destinationUrl')}</label>
             <input
               type="text"
               value={config.destinationBaseUrl}
@@ -173,7 +175,7 @@ export function ConfigForm() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">API Token ID</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('configuration.destinationApiToken')}</label>
             <input
               type="text"
               value={config.destinationTokenId}
@@ -183,7 +185,7 @@ export function ConfigForm() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">API Token</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('configuration.destinationToken')}</label>
             <input
               type="password"
               value={config.destinationTokenSecret}
@@ -201,14 +203,14 @@ export function ConfigForm() {
           disabled={isSaving}
           className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
         >
-          {isSaving ? 'Saving...' : 'Save Configuration'}
+          {isSaving ? 'Saving...' : t('configuration.saveConfig')}
         </button>
         <button
           onClick={verifyCredentials}
           disabled={isVerifying}
           className="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50"
         >
-          {isVerifying ? 'Verifying...' : 'Verify Credentials'}
+          {isVerifying ? 'Verifying...' : t('configuration.verifyCredentials')}
         </button>
       </div>
     </div>

@@ -487,9 +487,22 @@ function BookCard({
   };
 
   return (
-    <div className={`border rounded-lg overflow-hidden shadow-sm transition-all duration-200 ${
-      isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white hover:shadow-md'
-    }`}>
+    <div 
+      className={`border rounded-lg overflow-hidden shadow-sm transition-all duration-200 cursor-pointer ${
+        isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white hover:shadow-md'
+      }`}
+      onClick={(e) => {
+        // Prevent selection when clicking on buttons or checkbox
+        if (e.target instanceof HTMLElement && 
+            (e.target.tagName === 'BUTTON' || 
+             e.target.tagName === 'INPUT' || 
+             e.target.closest('button') || 
+             e.target.closest('input'))) {
+          return;
+        }
+        onSelect();
+      }}
+    >
       <div className="p-4">
         <div className="flex flex-col space-y-2">
           <div className="flex items-start justify-between">
@@ -499,6 +512,7 @@ function BookCard({
                 checked={isSelected}
                 onChange={onSelect}
                 className="h-4 w-4 mt-1.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                onClick={(e) => e.stopPropagation()}
               />
               <h3 className="ml-3 text-lg font-medium break-words pr-2" title={book.name}>
                 {book.name}
@@ -532,7 +546,10 @@ function BookCard({
         
         <div className="mt-4 flex justify-between">
           <button
-            onClick={onDetails}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDetails();
+            }}
             className="text-sm text-blue-600 hover:text-blue-800 focus:outline-none"
           >
             {t('buttons.viewDetails')}
@@ -635,13 +652,28 @@ function BookList({
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {books.map(book => (
-            <tr key={book.id} className={selectedBookIds.includes(book.id) ? 'bg-blue-50' : ''}>
+            <tr 
+              key={book.id} 
+              className={`${selectedBookIds.includes(book.id) ? 'bg-blue-50' : ''} cursor-pointer hover:bg-gray-50`}
+              onClick={(e) => {
+                // Prevent selection when clicking on buttons or checkbox
+                if (e.target instanceof HTMLElement && 
+                    (e.target.tagName === 'BUTTON' || 
+                     e.target.tagName === 'INPUT' || 
+                     e.target.closest('button') || 
+                     e.target.closest('input'))) {
+                  return;
+                }
+                onSelect(book.id);
+              }}
+            >
               <td className="px-3 py-4">
                 <input
                   type="checkbox"
                   className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   checked={selectedBookIds.includes(book.id)}
                   onChange={() => onSelect(book.id)}
+                  onClick={(e) => e.stopPropagation()}
                 />
               </td>
               <td className="px-3 py-4 text-sm max-w-[200px] break-words">
@@ -674,7 +706,10 @@ function BookList({
               </td>
               <td className="px-3 py-4 whitespace-nowrap text-sm">
                 <button
-                  onClick={() => onDetails(book)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDetails(book);
+                  }}
                   className="text-blue-600 hover:text-blue-900 mr-3"
                 >
                   {t('buttons.details')}
